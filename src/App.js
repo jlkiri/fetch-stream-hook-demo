@@ -1,24 +1,58 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useRef, useState, useCallback } from "react";
+import useFetchStream from "./hooks/useFetchStream";
+import "./App.css";
+
+function Download() {
+  const progressRef = useRef();
+  const [hideIndicator, setHideIndicator] = useState(false);
+  const [aborted, setAborted] = useState(false);
+
+  const showProgress = useCallback(({ loaded, total }) => {
+    progressRef.current.textContent = `${Math.round((loaded / total) * 100)}%`;
+  }, []);
+
+  const onFinish = useCallback(() => {
+    progressRef.current.classList.add("fadeOut");
+    setTimeout(() => setHideIndicator(true), 700);
+  }, []);
+
+  const readBlob = useCallback(response => response.blob(), []);
+
+  const handleButtonClick = () => {
+    abort();
+    setAborted(true);
+  };
+
+  const { data, abort } = useFetchStream({
+    url: "space.jpg",
+    onChunkLoaded: showProgress,
+    onFinish: onFinish,
+    bodyReader: readBlob
+  });
+
+  if (!hideIndicator)
+    return (
+      <div className="loading">
+        <span className="indicator" ref={progressRef}></span>
+        {aborted ? (
+          <span>Download was aborted</span>
+        ) : (
+          <button onClick={handleButtonClick}>ABORT</button>
+        )}
+      </div>
+    );
+
+  if (!data) return null;
+
+  const dataUrl = URL.createObjectURL(data);
+
+  return <img src={dataUrl} />;
+}
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app">
+      <Download />
     </div>
   );
 }

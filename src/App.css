@@ -1,22 +1,42 @@
-.App {
+/* Download screen */
+
+.app {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.indicator {
+  font-family: monospace;
+  font-size: 40px;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.loading {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #09d3ac;
+button {
+  padding: 15px;
+  margin-top: 15px;
+  background-color: white;
+  border: 3px solid black;
+  cursor: pointer;
+}
+
+img {
+  height: 100%;
+  width: 100%;
+}
+
+span {
+  font-size: 20px;
+}
+
+.fadeOut {
+  transition: 0.7s;
+  opacity: 0;
 }
