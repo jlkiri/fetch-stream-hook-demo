@@ -2,6 +2,20 @@ import React, { useRef, useState, useCallback } from "react";
 import useFetchStream from "./hooks/useFetchStream";
 import "./App.css";
 
+function Start() {
+  const [started, setStarted] = useState(false);
+
+  if (!started) {
+    return (
+      <div className="loading">
+        <button onClick={() => setStarted(true)}>START</button>
+      </div>
+    );
+  }
+
+  return <Download />;
+}
+
 function Download() {
   const progressRef = useRef();
   const [hideIndicator, setHideIndicator] = useState(false);
@@ -52,7 +66,7 @@ function Download() {
 function App() {
   return (
     <div className="app">
-      <Download />
+      <Start />
     </div>
   );
 }
