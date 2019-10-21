@@ -49,7 +49,7 @@ function Download() {
         {aborted ? (
           <span>Download was aborted</span>
         ) : (
-          <button onClick={handleButtonClick}>ABORT/RESUME</button>
+          <button onClick={handleButtonClick}>ABORT</button>
         )}
       </div>
     );
