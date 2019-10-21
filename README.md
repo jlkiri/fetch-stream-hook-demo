@@ -1,1 +1,1 @@
-Demo of `useFetchStream` hook in action
+Demo of `useFetchStream` hook in action.

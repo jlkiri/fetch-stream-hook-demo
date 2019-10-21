@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 
-const mimeTypes = {
+const MIMETypes = {
   json: response => response.json(),
-  text: response => response.text()
+  text: response => response.text(),
+  blob: response => response.blob(),
+  arrayBuffer: response => response.arrayBuffer(),
+  formData: response => response.formData()
 };
 
 export default function useFetchStream({
@@ -10,29 +13,62 @@ export default function useFetchStream({
   onChunkLoaded,
   onError = undefined,
   onFinish = undefined,
-  bodyReader = undefined,
-  byteLength = undefined
+  parseAs = undefined,
+  byteLength = undefined,
+  fetchOptions = Object.create(null)
 }) {
   const [data, setData] = useState(null);
+
+  // Handle error message in browsers that do not throw AbortError
+  let fetchAborted = false;
 
   // Prevent needless creation of AbortController on re-render
   const { signal, abort } = useMemo(() => {
     const abortController = new AbortController();
     const signal = abortController.signal;
-    const abort = () => abortController.abort();
+    const abort = function abort() {
+      fetchAborted = true;
+      abortController.abort();
+    };
     return { signal, abort };
-  }, []);
+  }, [url]);
 
   useEffect(() => {
-    const handleError = error => {
+    const fetchOpts = Object.assign({ signal: signal }, fetchOptions);
+
+    const handleError = function handleError(error) {
+      if (fetchAborted) {
+        console.warn("Fetch operation was aborted.");
+        return;
+      }
+      if (error.name == "AbortError") {
+        console.warn("Fetch operation was aborted.");
+        return;
+      }
       if (onError) return onError(error);
-      return console.error(`useFetchStream error: ${error}`);
+      return console.error(error);
     };
 
-    fetch(url, { signal })
+    fetchAborted = false;
+
+    fetch(url, fetchOpts)
       .then(response => {
+        if (!response.ok) {
+          throw new Error(
+            `Request error: ${response.status}: ${response.statusText}`
+          );
+        }
+
         const contentLength =
           byteLength || response.headers.get("content-length");
+
+        // Fallback to simple fetch
+        if (contentLength === null) {
+          console.warn(
+            "Content-Length header is absent. Falling back to simple fetch."
+          );
+          return new Response(response.body);
+        }
 
         const contentType = response.headers.get("content-type");
 
@@ -53,8 +89,7 @@ export default function useFetchStream({
 
                 loaded += value.byteLength;
 
-                if (contentLength)
-                  onChunkLoaded({ loaded, total: contentLength });
+                onChunkLoaded({ loaded, total: contentLength });
 
                 controller.enqueue(value);
 
@@ -66,26 +101,27 @@ export default function useFetchStream({
 
         // Pass Content-Type to new response because original headers are lost
         return new Response(stream, {
+          signal: signal,
           headers: { "Content-Type": contentType }
         });
       })
       .then(response => {
         const contentType = response.headers.get("content-type");
 
-        const readBody = bodyReader || selectBodyReader();
+        const readBody = MIMETypes[parseAs] || selectBodyReader();
 
         function selectBodyReader() {
           const isJson = contentType && contentType.match(/json/i);
           const isText = contentType && contentType.match(/text/i);
 
-          if (isJson) return mimeTypes.json;
-          if (isText) return mimeTypes.text;
+          if (isJson) return MIMETypes.json;
+          if (isText) return MIMETypes.text;
           return null;
         }
 
         if (!readBody)
           throw new Error(
-            "You must provide a body reading function for MIME types other than JSON or text."
+            "Read error: You must provide a parseAs option for MIME types other than JSON or text."
           );
 
         return readBody(response);
@@ -95,7 +131,7 @@ export default function useFetchStream({
         setData(data);
       })
       .catch(handleError);
-  }, [url, onChunkLoaded, onError, onFinish, bodyReader, signal, byteLength]);
+  }, [url, onChunkLoaded, onError, onFinish, parseAs, byteLength]);
 
   return { data: data, abort: abort };
 }

@@ -30,8 +30,6 @@ function Download() {
     setTimeout(() => setHideIndicator(true), 700);
   }, []);
 
-  const readBlob = useCallback(response => response.blob(), []);
-
   const handleButtonClick = () => {
     abort();
     setAborted(true);
@@ -41,7 +39,7 @@ function Download() {
     url: "space.jpg",
     onChunkLoaded: showProgress,
     onFinish: onFinish,
-    bodyReader: readBlob
+    parseAs: "blob"
   });
 
   if (!hideIndicator)
@@ -51,7 +49,7 @@ function Download() {
         {aborted ? (
           <span>Download was aborted</span>
         ) : (
-          <button onClick={handleButtonClick}>ABORT</button>
+          <button onClick={handleButtonClick}>ABORT/RESUME</button>
         )}
       </div>
     );
