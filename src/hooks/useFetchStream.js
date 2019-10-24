@@ -37,11 +37,7 @@ export default function useFetchStream({
     const fetchOpts = Object.assign({ signal: signal }, fetchOptions);
 
     const handleError = function handleError(error) {
-      if (fetchAborted) {
-        console.warn("Fetch operation was aborted.");
-        return;
-      }
-      if (error.name == "AbortError") {
+      if (error.name == "AbortError" || fetchAborted) {
         console.warn("Fetch operation was aborted.");
         return;
       }
